@@ -7,9 +7,17 @@ pipeline {
         DOCKER_CREDENTIALS = 'fba29f00-f5f0-4c9d-b8a5-74d8732276b4' // Set if you push to a private Docker registry
         USERS = 'users'
         VOLUME_SETTING = '/home/pi/Documents/databases:/databases'
+        SECRET_FILE = credentials('users')
     }
 
     stages {
+        stage("clean workspace") {
+            steps {
+                script {
+                    cleanWs()
+                }
+            }
+        }
         stage('Get VCS') {
             steps {
                 git branch: 'main', url: 'https://github.com/noobiland/database-handler.git', credentialsId: '807ef3ed-90e8-440d-bff3-33bd0430c2d4'
@@ -18,12 +26,8 @@ pipeline {
         stage('Inject Resources') {
             steps {
                 script {
-                    withCredentials([file(credentialsId: USERS, variable: 'SECRET_FILE')]) {
-                        sh '''
-                        mkdir -p secret-data
-                        cp $SECRET_FILE secret-data/users.csv
-                    '''
-                    }
+                    def data = readFile(file: SECRET_FILE)
+                    writeFile(file: 'secret-data/users.csv', text: data)
                 }
             }
         }
@@ -64,11 +68,6 @@ pipeline {
                         fi
                     """
                 }
-            }
-        }
-        stage('Docker start new container') {
-            steps {
-                sh("docker run -dit --name $CONTAINER_NAME -v '$VOLUME_SETTING' $IMAGE_NAME")
             }
         }
     }

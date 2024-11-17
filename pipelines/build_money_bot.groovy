@@ -10,6 +10,13 @@ pipeline {
     }
 
     stages {
+        stage('clean workspace') {
+            steps {
+                script {
+                    cleanWs()
+                }
+            }
+        }
         stage('Get VCS') {
             steps {
                 git branch: 'main', url: 'https://github.com/noobiland/telegram-budget-bot.git', credentialsId: '807ef3ed-90e8-440d-bff3-33bd0430c2d4'
