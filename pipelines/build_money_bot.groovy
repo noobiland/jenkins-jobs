@@ -42,7 +42,7 @@ pipeline {
                                                  usernameVariable: 'DOCKER_USERNAME',
                                                  passwordVariable: 'DOCKER_PASSWORD')]) {
                     // Login to Docker registry
-                    sh("echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin")
+                    sh('echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin')
                                                  }
             }
         }
@@ -56,9 +56,18 @@ pipeline {
                 sh("docker push $IMAGE_NAME")
             }
         }
-        stage('Docker remove old container') {
+        stage('Docker remove old container if exist') {
             steps {
-                sh("docker rm $CONTAINER_NAME")
+                script {
+                    sh """
+                        if [ \$(docker ps -a -q -f name=\${CONTAINER_NAME}) ]; then
+                            echo "Removing existing container: \${CONTAINER_NAME}"
+                            docker rm -f \${CONTAINER_NAME}
+                        else
+                            echo "Container \${CONTAINER_NAME} does not exist, skipping removal."
+                        fi
+                    """
+                }
             }
         }
         stage('Docker start new container') {

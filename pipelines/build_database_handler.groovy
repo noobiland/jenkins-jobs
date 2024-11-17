@@ -5,7 +5,7 @@ pipeline {
         IMAGE_NAME = 'firepand4/fortress:database-handler'
         CONTAINER_NAME = 'database-handler-app'
         DOCKER_CREDENTIALS = 'fba29f00-f5f0-4c9d-b8a5-74d8732276b4' // Set if you push to a private Docker registry
-        USERS = credentials('users')
+        USERS = 'users'
         VOLUME_SETTING = '/home/pi/Documents/databases:/databases'
     }
 
@@ -17,9 +17,13 @@ pipeline {
         }
         stage('Inject Resources') {
             steps {
-                withCredentials([file(credentialsId: USERS, variable: 'SECRET_FILE')]) {
-                    def filePath = "${pwd()}/resources"
-                    sh("cp $SECRET_FILE $filePath")
+                script {
+                    withCredentials([file(credentialsId: USERS, variable: 'SECRET_FILE')]) {
+                        sh '''
+                        mkdir -p secret-data
+                        cp $SECRET_FILE secret-data/users.csv
+                    '''
+                    }
                 }
             }
         }
@@ -48,9 +52,18 @@ pipeline {
                 sh("docker push $IMAGE_NAME")
             }
         }
-        stage('Docker remove old container') {
+        stage('Docker remove old container if exist') {
             steps {
-                sh("docker rm $CONTAINER_NAME")
+                script {
+                    sh """
+                        if [ \$(docker ps -a -q -f name=\${CONTAINER_NAME}) ]; then
+                            echo "Removing existing container: \${CONTAINER_NAME}"
+                            docker rm -f \${CONTAINER_NAME}
+                        else
+                            echo "Container \${CONTAINER_NAME} does not exist, skipping removal."
+                        fi
+                    """
+                }
             }
         }
         stage('Docker start new container') {
