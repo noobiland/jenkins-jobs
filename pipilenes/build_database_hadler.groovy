@@ -2,32 +2,24 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = 'firepand4/fortress:budget-bot'
-        CONTAINER_NAME = 'budget-bot-app'
+        IMAGE_NAME = 'firepand4/fortress:database-handler'
+        CONTAINER_NAME = 'database-handler-app'
         DOCKER_CREDENTIALS = 'fba29f00-f5f0-4c9d-b8a5-74d8732276b4' // Set if you push to a private Docker registry
-        BOT_TOKEN = credentials('budget-bot-token-id')
-        VOLUME_SETTING = '/home/pi/temp/telegram:/output'
+        USERS = credentials('users')
+        VOLUME_SETTING = '/home/pi/Documents/databases:/databases'
     }
 
     stages {
         stage('Get VCS') {
             steps {
-                git branch: 'main', url: 'https://github.com/noobiland/telegram-budget-bot.git', credentialsId: '807ef3ed-90e8-440d-bff3-33bd0430c2d4'
+                git branch: 'main', url: 'https://github.com/noobiland/database-handler.git', credentialsId: '807ef3ed-90e8-440d-bff3-33bd0430c2d4'
             }
         }
         stage('Inject Resources') {
             steps {
-                script {
-                    // Define the path for the token file within the working directory
+                withCredentials([file(credentialsId: USERS, variable: 'SECRET_FILE')]) {
                     def filePath = "${pwd()}/resources"
-                    def absFileName = "${filePath}/token"
-
-                    // Ensure the directory exists
-                    sh "mkdir -p ${filePath}"
-
-                    // Create the file with the token
-                    writeFile file: absFileName, text: BOT_TOKEN
-                    echo "Token file created at ${absFileName}"
+                    sh("cp $SECRET_FILE $filePath")
                 }
             }
         }
@@ -42,7 +34,7 @@ pipeline {
                                                  usernameVariable: 'DOCKER_USERNAME',
                                                  passwordVariable: 'DOCKER_PASSWORD')]) {
                     // Login to Docker registry
-                    sh("echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin")
+                    sh('echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin')
                                                  }
             }
         }
