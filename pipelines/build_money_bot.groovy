@@ -6,7 +6,7 @@ pipeline {
         CONTAINER_NAME = 'budget-bot-app'
         DOCKER_CREDENTIALS = 'fba29f00-f5f0-4c9d-b8a5-74d8732276b4' // Set if you push to a private Docker registry
         BOT_TOKEN = credentials('budget-bot-token-id')
-        VOLUME_SETTING = '/home/pi/temp/telegram:/output'
+        VOLUME_SETTING = '/home/pi/Documents/databases:/output'
     }
 
     stages {
